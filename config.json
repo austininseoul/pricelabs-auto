@@ -1,0 +1,28 @@
+{
+  "strategy": "hold", 
+  "adjustments": {
+    "increase": {
+      "percentage": 2,
+      "duration": 7
+    },
+    "decrease": {
+      "percentage": 2,
+      "duration": 7
+    },
+    "hold": {
+      "oscillationPercentage": 2
+    }
+  },
+  "occupancyWeights": {
+    "sevenDay": 0.6,
+    "thirtyDay": 0.3,
+    "sixtyDay": 0.1
+  },
+  "occupancyThresholds": {
+    "high": 0.85,
+    "medium": 0.50,
+    "low": 0.40,
+    "critical": 0.20
+  },
+  "logFile": "pricelabs_changes.json"
+} 

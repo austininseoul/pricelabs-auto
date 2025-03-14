@@ -1,0 +1,56 @@
+{
+  "lastRun": "2025-03-02",
+  "changes": [
+    {
+      "url": "https://app.pricelabs.co/pricing?listings=1299249605367639537&pms_name=airbnb&open_calendar=true",
+      "date": "2025-03-02",
+      "occupancy": {
+        "7_day_occ": 1,
+        "30_day_occ": 0.83,
+        "60_day_occ": 0.67
+      },
+      "minPrice": {
+        "before": 111,
+        "after": 114
+      },
+      "basePrice": {
+        "before": 134,
+        "after": 138
+      }
+    },
+    {
+      "url": "https://app.pricelabs.co/pricing?listings=1338317504311937887&pms_name=airbnb&open_calendar=true",
+      "date": "2025-03-02",
+      "occupancy": {
+        "7_day_occ": 0,
+        "30_day_occ": 0,
+        "60_day_occ": 0
+      },
+      "minPrice": {
+        "before": 134,
+        "after": 130
+      },
+      "basePrice": {
+        "before": 198,
+        "after": 192
+      }
+    },
+    {
+      "url": "https://app.pricelabs.co/pricing?listings=1338860840874046953&pms_name=airbnb&open_calendar=true",
+      "date": "2025-03-02",
+      "occupancy": {
+        "7_day_occ": 0.29,
+        "30_day_occ": 0.07,
+        "60_day_occ": 0.03
+      },
+      "minPrice": {
+        "before": 81,
+        "after": 79
+      },
+      "basePrice": {
+        "before": 106,
+        "after": 103
+      }
+    }
+  ]
+}

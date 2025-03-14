@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PriceLabs Strategy Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/dayjs.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .config-panel {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            flex: 2;
+            min-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .results-panel {
+            flex: 1;
+            min-width: 300px;
+            max-height: 600px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .log-entry.strategy-increase {
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        .log-entry.strategy-decrease {
+            background-color: rgba(244, 67, 54, 0.1);
+        }
+        .log-entry.strategy-hold {
+            background-color: rgba(255, 193, 7, 0.1);
+        }
+        .chart-wrapper {
+            height: 400px;
+            margin-bottom: 30px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #e9ecef;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .preset-scenarios {
+            margin-bottom: 20px;
+        }
+        .scenario-btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+            background: #6c757d;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            flex: 1;
+            padding: 15px;
+            background: #f1f8e9;
+            border-radius: 8px;
+            margin-right: 10px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #43a047;
+        }
+    </style>
+</head>
+<body>
+    <h1>PriceLabs Strategy Simulator</h1>
+    
+    <div class="container">
+        <div class="config-panel">
+            <h2>Simulation Configuration</h2>
+            
+            <div class="preset-scenarios">
+                <h3>Preset Scenarios</h3>
+                <button class="scenario-btn" data-scenario="high-occupancy">High Occupancy</button>
+                <button class="scenario-btn" data-scenario="low-occupancy">Low Occupancy</button>
+                <button class="scenario-btn" data-scenario="fluctuating">Fluctuating</button>
+                <button class="scenario-btn" data-scenario="seasonal">Seasonal</button>
+                <button class="scenario-btn" data-scenario="weekend-peaks">Weekend Peaks</button>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" data-tab="basic">Basic</div>
+                <div class="tab" data-tab="advanced">Advanced</div>
+                <div class="tab" data-tab="history">History</div>
+            </div>
+            
+            <div class="tab-content active" data-tab-content="basic">
+                <label for="initial-base-price">Initial Base Price ($)</label>
+                <input type="number" id="initial-base-price" value="100">
+                
+                <label for="initial-min-price">Initial Min Price ($)</label>
+                <input type="number" id="initial-min-price" value="80">
+                
+                <label for="initial-7day-occ">Initial 7-day Occupancy (%)</label>
+                <input type="number" id="initial-7day-occ" value="70" min="0" max="100">
+                
+                <label for="initial-30day-occ">Initial 30-day Occupancy (%)</label>
+                <input type="number" id="initial-30day-occ" value="65" min="0" max="100">
+                
+                <label for="initial-60day-occ">Initial 60-day Occupancy (%)</label>
+                <input type="number" id="initial-60day-occ" value="60" min="0" max="100">
+                
+                <label for="simulation-days">Simulation Duration (days)</label>
+                <input type="number" id="simulation-days" value="30" min="1" max="365">
+            </div>
+            
+            <div class="tab-content" data-tab-content="advanced">
+                <h3>Occupancy Weights</h3>
+                <label for="weight-7day">7-day Weight</label>
+                <input type="number" id="weight-7day" value="0.6" min="0" max="1" step="0.1">
+                
+                <label for="weight-30day">30-day Weight</label>
+                <input type="number" id="weight-30day" value="0.3" min="0" max="1" step="0.1">
+                
+                <label for="weight-60day">60-day Weight</label>
+                <input type="number" id="weight-60day" value="0.1" min="0" max="1" step="0.1">
+                
+                <h3>Occupancy Thresholds</h3>
+                <label for="threshold-high">High Threshold (%)</label>
+                <input type="number" id="threshold-high" value="85" min="0" max="100">
+                
+                <label for="threshold-medium">Medium Threshold (%)</label>
+                <input type="number" id="threshold-medium" value="50" min="0" max="100">
+                
+                <label for="threshold-low">Low Threshold (%)</label>
+                <input type="number" id="threshold-low" value="40" min="0" max="100">
+                
+                <label for="threshold-critical">Critical Threshold (%)</label>
+                <input type="number" id="threshold-critical" value="20" min="0" max="100">
+                
+                <h3>Adjustments</h3>
+                <label for="increase-percentage">Increase Percentage (%)</label>
+                <input type="number" id="increase-percentage" value="5" min="0" max="20">
+                
+                <label for="decrease-percentage">Decrease Percentage (%)</label>
+                <input type="number" id="decrease-percentage" value="7" min="0" max="20">
+                
+                <label for="oscillation-percentage">Oscillation Percentage (%)</label>
+                <input type="number" id="oscillation-percentage" value="3" min="0" max="10">
+            </div>
+            
+            <div class="tab-content" data-tab-content="history">
+                <h3>Historical Data</h3>
+                <label for="past-days">Days of History to Include</label>
+                <input type="number" id="past-days" value="14" min="0" max="365">
+                
+                <label for="past-strategy">Past Strategy Pattern</label>
+                <select id="past-strategy">
+                    <option value="none">No Past Adjustments</option>
+                    <option value="increasing">Increasing Prices</option>
+                    <option value="decreasing">Decreasing Prices</option>
+                    <option value="mixed">Mixed Adjustments</option>
+                    <option value="fluctuating">Fluctuating Occupancy</option>
+                </select>
+                
+                <label for="consecutive-increases">Consecutive Increases Before Sim</label>
+                <input type="number" id="consecutive-increases" value="0" min="0" max="10">
+                
+                <label for="consecutive-decreases">Consecutive Decreases Before Sim</label>
+                <input type="number" id="consecutive-decreases" value="0" min="0" max="10">
+                
+                <label for="cumulative-increase">Cumulative Increase Before Sim (%)</label>
+                <input type="number" id="cumulative-increase" value="0" min="0" max="20">
+            </div>
+            
+            <button id="run-simulation">Run Simulation</button>
+        </div>
+        
+        <div class="chart-container">
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <h3>Avg. Occupancy</h3>
+                    <div class="value" id="avg-occupancy">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Price Change</h3>
+                    <div class="value" id="price-change">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Increases</h3>
+                    <div class="value" id="increase-count">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Decreases</h3>
+                    <div class="value" id="decrease-count">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Holds</h3>
+                    <div class="value" id="hold-count">-</div>
+                </div>
+            </div>
+            
+            <div class="chart-wrapper">
+                <canvas id="price-occupancy-chart"></canvas>
+            </div>
+            
+            <div class="chart-wrapper">
+                <canvas id="strategy-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="results-panel">
+            <h2>Simulation Log</h2>
+            <div id="simulation-log"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Helper functions
+        function decimalToPercent(decimal) {
+            return decimal * 100;
+        }
+        
+        function percentToDecimal(percent) {
+            return percent / 100;
+        }
+        
+        // PricingStrategy class
+        class PricingStrategy {
+            constructor(config) {
+                this.config = config;
+                this.propertyStats = new Map();
+                this.logHistory = {
+                    lastRun: new Date().toISOString(),
+                    changes: []
+                };
+            }
+            
+            parseOccupancyRate(rate) {
+                if (rate === undefined || rate === null || rate === "N/A") {
+                    return 0;
+                }
+                if (typeof rate === 'number') {
+                    return Math.min(Math.max(rate, 0), 1);
+                }
+                if (typeof rate === 'string') {
+                    const cleanRate = rate.replace('%', '').trim();
+                    return parseFloat(cleanRate) <= 1 ? parseFloat(cleanRate) : parseFloat(cleanRate) / 100;
+                }
+                return 0;
+            }
+            
+            calculateOccupancyTrend(occupancyHistory) {
+                if (!occupancyHistory || occupancyHistory.length < 2) return 0;
+                const sortedHistory = [...occupancyHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const recent = sortedHistory[0]["7_day_occ"];
+                const previous = sortedHistory[1]["7_day_occ"];
+                return (recent - previous) * 100;
+            }
+            
+            getPropertyStrategy(propertyUrl, currentOccupancy) {
+                let strategy = this.config.strategy || "hold";
+                const current7DayOcc = this.parseOccupancyRate(currentOccupancy["7_day_occ"]);
+                const current30DayOcc = this.parseOccupancyRate(currentOccupancy["30_day_occ"]);
+                const current60DayOcc = this.parseOccupancyRate(currentOccupancy["60_day_occ"]);
+                
+                const weights = this.config.occupancyWeights || { sevenDay: 0.6, thirtyDay: 0.3, sixtyDay: 0.1 };
+                const thresholds = this.config.occupancyThresholds || { high: 0.85, medium: 0.50, low: 0.40, critical: 0.20 };
+                
+                const weightedOcc = (current7DayOcc * weights.sevenDay) + 
+                                   (current30DayOcc * weights.thirtyDay) + 
+                                   (current60DayOcc * weights.sixtyDay);
+                
+                let forceHold = false;
+                let consecutiveIncreases = 0;
+                let consecutiveDecreases = 0;
+                let cumulativeIncrease = 0;
+                let cumulativeDecrease = 0;
+                
+                if (this.propertyStats.has(propertyUrl)) {
+                    const stats = this.propertyStats.get(propertyUrl);
+                    if (stats.adjustmentHistory && stats.adjustmentHistory.length > 0) {
+                        const recentAdjustments = stats.adjustmentHistory.slice(-7);
+                        for (let i = recentAdjustments.length - 1; i >= 0; i--) {
+                            const adjustment = recentAdjustments[i];
+                            if (adjustment.strategy === "increase" && adjustment.percentChange > 0) {
+                                consecutiveIncreases++;
+                                cumulativeIncrease += adjustment.percentChange;
+                                if (consecutiveDecreases > 0) break;
+                            } else if (adjustment.strategy === "decrease" && adjustment.percentChange < 0) {
+                                consecutiveDecreases++;
+                                cumulativeDecrease += Math.abs(adjustment.percentChange);
+                                if (consecutiveIncreases > 0) break;
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        this.simulationLog.push({
+                            message: `Recent adjustment history: ${consecutiveIncreases} consecutive increases (${cumulativeIncrease.toFixed(1)}% total), ${consecutiveDecreases} consecutive decreases (${cumulativeDecrease.toFixed(1)}% total)`,
+                            type: 'info'
+                        });
+                        
+                        if (consecutiveIncreases > 0 && cumulativeIncrease >= 4) {
+                            this.simulationLog.push({
+                                message: `Forcing HOLD strategy after ${consecutiveIncreases} consecutive increases totaling ${cumulativeIncrease.toFixed(1)}%`,
+                                type: 'hold'
+                            });
+                            forceHold = true;
+                        }
+                        if (consecutiveDecreases >= 3) {
+                            this.simulationLog.push({
+                                message: `Forcing HOLD strategy after ${consecutiveDecreases} consecutive decreases totaling ${cumulativeDecrease.toFixed(1)}%`,
+                                type: 'hold'
+                            });
+                            forceHold = true;
+                        }
+                    }
+                }
+                
+                if (forceHold) return "hold";
+                
+                if (current7DayOcc >= thresholds.high) {
+                    this.simulationLog.push({
+                        message: `HIGH OCCUPANCY DETECTED (${(current7DayOcc * 100).toFixed(1)}% ≥ ${thresholds.high*100}%)`,
+                        type: 'increase'
+                    });
+                    strategy = "increase";
+                } else if (weightedOcc < thresholds.low && current7DayOcc < thresholds.medium) {
+                    this.simulationLog.push({
+                        message: `LOW OCCUPANCY DETECTED (${(weightedOcc * 100).toFixed(1)}% < ${thresholds.low*100}%)`,
+                        type: 'decrease'
+                    });
+                    strategy = "decrease";
+                } else if (this.propertyStats.has(propertyUrl)) {
+                    const stats = this.propertyStats.get(propertyUrl);
+                    const occupancyTrend = this.calculateOccupancyTrend(stats.occupancyHistory);
+                    this.simulationLog.push({
+                        message: `Occupancy trend: ${occupancyTrend.toFixed(2)} percentage points`,
+                        type: 'info'
+                    });
+                    
+                    if (occupancyTrend > 5 || current7DayOcc > 0.7) {
+                        strategy = "increase";
+                    } else if (occupancyTrend < -3 || weightedOcc < 0.45) {
+                        strategy = "decrease";
+                    } else {
+                        strategy = "hold";
+                    }
+                }
+                
+                this.simulationLog.push({
+                    message: `Selected strategy: ${strategy}`,
+                    type: strategy
+                });
+                return strategy;
+            }
+            
+            calculateAdjustedPrice(propertyUrl, currentPrice, currentOccupancy, priceType) {
+                const strategy = this.getPropertyStrategy(propertyUrl, currentOccupancy);
+                const sevenDayOcc = this.parseOccupancyRate(currentOccupancy["7_day_occ"]);
+                const thirtyDayOcc = this.parseOccupancyRate(currentOccupancy["30_day_occ"]);
+                const sixtyDayOcc = this.parseOccupancyRate(currentOccupancy["60_day_occ"]);
+                
+                const weights = this.config.occupancyWeights || { sevenDay: 0.6, thirtyDay: 0.3, sixtyDay: 0.1 };
+                const thresholds = this.config.occupancyThresholds || { high: 0.85, medium: 0.50, low: 0.40, critical: 0.20 };
+                
+                const weightedOcc = (sevenDayOcc * weights.sevenDay) + 
+                                   (thirtyDayOcc * weights.thirtyDay) + 
+                                   (sixtyDayOcc * weights.sixtyDay);
+                
+                let adjustmentPercentage = 0;
+                const dayOfWeek = new Date().getDay();
+                
+                switch (strategy) {
+                    case "increase":
+                        if (sevenDayOcc >= 0.95) {
+                            adjustmentPercentage = this.config.adjustments.increase.percentage * 2;
+                            this.simulationLog.push({
+                                message: `VERY HIGH occupancy (${(sevenDayOcc * 100).toFixed(1)}%) - applying ${adjustmentPercentage.toFixed(1)}% increase`,
+                                type: 'increase'
+                            });
+                        } else if (sevenDayOcc >= thresholds.high) {
+                            adjustmentPercentage = this.config.adjustments.increase.percentage * 1.5;
+                            this.simulationLog.push({
+                                message: `HIGH occupancy (${(sevenDayOcc * 100).toFixed(1)}%) - applying ${adjustmentPercentage.toFixed(1)}% increase`,
+                                type: 'increase'
+                            });
+                        } else {
+                            adjustmentPercentage = this.config.adjustments.increase.percentage;
+                            this.simulationLog.push({
+                                message: `Standard increase - applying ${adjustmentPercentage.toFixed(1)}%`,
+                                type: 'increase'
+                            });
+                        }
+                        break;
+                    
+                    case "decrease":
+                        if (weightedOcc < thresholds.critical) {
+                            adjustmentPercentage = -this.config.adjustments.decrease.percentage * 1.5;
+                            this.simulationLog.push({
+                                message: `CRITICALLY LOW occupancy (${(weightedOcc * 100).toFixed(1)}%) - applying ${Math.abs(adjustmentPercentage).toFixed(1)}% decrease`,
+                                type: 'decrease'
+                            });
+                        } else if (sevenDayOcc < 0.30 && thirtyDayOcc < thresholds.low) {
+                            adjustmentPercentage = -this.config.adjustments.decrease.percentage * 1.2;
+                            this.simulationLog.push({
+                                message: `VERY LOW occupancy (${(sevenDayOcc * 100).toFixed(1)}%) - applying ${Math.abs(adjustmentPercentage).toFixed(1)}% decrease`,
+                                type: 'decrease'
+                            });
+                        } else {
+                            adjustmentPercentage = -this.config.adjustments.decrease.percentage;
+                            this.simulationLog.push({
+                                message: `LOW occupancy (${(sevenDayOcc * 100).toFixed(1)}%) - applying ${Math.abs(adjustmentPercentage).toFixed(1)}% decrease`,
+                                type: 'decrease'
+                            });
+                        }
+                        break;
+                    
+                    case "hold":
+                        if (weightedOcc >= thresholds.low && weightedOcc <= thresholds.high) {
+                            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                            const baseOsc = this.config.adjustments.hold.oscillationPercentage;
+                            adjustmentPercentage = isWeekend ? 
+                                (dayOfWeek % 2 === 0 ? baseOsc * 1.2 : -baseOsc * 0.8) : 
+                                (dayOfWeek % 2 === 0 ? baseOsc : -baseOsc);
+                            this.simulationLog.push({
+                                message: `HOLD strategy - applying ${adjustmentPercentage > 0 ? "+" : ""}${adjustmentPercentage.toFixed(1)}% oscillation`,
+                                type: 'hold'
+                            });
+                        } else if (weightedOcc < thresholds.low) {
+                            adjustmentPercentage = -this.config.adjustments.decrease.percentage * 0.7;
+                            this.simulationLog.push({
+                                message: `HOLD strategy overridden due to low occupancy (${(weightedOcc * 100).toFixed(1)}%) - applying ${Math.abs(adjustmentPercentage).toFixed(1)}% decrease`,
+                                type: 'hold'
+                            });
+                        } else {
+                            adjustmentPercentage = this.config.adjustments.increase.percentage * 0.7;
+                            this.simulationLog.push({
+                                message: `HOLD strategy overridden due to high occupancy (${(weightedOcc * 100).toFixed(1)}%) - applying ${adjustmentPercentage.toFixed(1)}% increase`,
+                                type: 'hold'
+                            });
+                        }
+                        break;
+                    
+                    default:
+                        this.simulationLog.push({
+                            message: "No valid strategy found, making no changes",
+                            type: 'info'
+                        });
+                        return currentPrice;
+                }
+                
+                const adjustment = currentPrice * (adjustmentPercentage / 100);
+                let adjustedPrice = Math.round(currentPrice + adjustment);
+                
+                if (priceType === "min" && this.propertyStats.has(propertyUrl)) {
+                    const stats = this.propertyStats.get(propertyUrl);
+                    if (stats.priceHistory.length > 0) {
+                        const recentPrices = stats.priceHistory[0];
+                        if (recentPrices && recentPrices.basePrice && recentPrices.basePrice.after !== undefined) {
+                            const recentBasePrice = recentPrices.basePrice.after;
+                            const minAllowedPrice = Math.round(recentBasePrice * 0.8);
+                            if (adjustedPrice > minAllowedPrice) {
+                                this.simulationLog.push({
+                                    message: `Capping min price to ensure it's at least 20% below base price: ${adjustedPrice} -> ${minAllowedPrice}`,
+                                    type: 'info'
+                                });
+                                adjustedPrice = minAllowedPrice;
+                            }
+                        }
+                    }
+                }
+                
+                if (this.propertyStats.has(propertyUrl)) {
+                    const stats = this.propertyStats.get(propertyUrl);
+                    stats.adjustmentHistory.push({
+                        date: new Date().toISOString(),
+                        strategy: strategy,
+                        percentChange: adjustmentPercentage,
+                        priceType: priceType,
+                        before: currentPrice,
+                        after: adjustedPrice
+                    });
+                }
+                
+                return adjustedPrice;
+            }
+            
+            simulateOccupancyResponse(basePrice, minPrice, currentOccupancy, strategy, day) {
+                const sevenDayOcc = this.parseOccupancyRate(currentOccupancy["7_day_occ"]);
+                const thirtyDayOcc = this.parseOccupancyRate(currentOccupancy["30_day_occ"]);
+                const sixtyDayOcc = this.parseOccupancyRate(currentOccupancy["60_day_occ"]);
+                
+                const elasticity = -1.2;
+                let seasonalFactor = 1.0;
+                const dayOfWeek = (day % 7);
+                if (dayOfWeek === 5 || dayOfWeek === 6) seasonalFactor = 1.2;
+                else if (dayOfWeek === 0) seasonalFactor = 1.1;
+                
+                const randomFactor = 0.85 + (Math.random() * 0.3);
+                const normalizedPrice = basePrice / 100;
+                const priceFactor = 1 + (elasticity * (normalizedPrice - 1));
+                
+                let newSevenDayOcc = sevenDayOcc * priceFactor * seasonalFactor * randomFactor;
+                if (strategy === "increase") newSevenDayOcc *= 0.95;
+                else if (strategy === "decrease") newSevenDayOcc *= 1.08;
+                
+                newSevenDayOcc = Math.min(Math.max(newSevenDayOcc, 0), 1);
+                const new30DayOcc = thirtyDayOcc * 0.9 + newSevenDayOcc * 0.1;
+                const new60DayOcc = sixtyDayOcc * 0.95 + new30DayOcc * 0.05;
+                
+                return {
+                    "7_day_occ": newSevenDayOcc,
+                    "30_day_occ": new30DayOcc,
+                    "60_day_occ": new60DayOcc
+                };
+            }
+            
+            runSimulation(config) {
+                this.simulationResults = {
+                    days: [],
+                    prices: [],
+                    occupancy: { "7_day_occ": [], "30_day_occ": [], "60_day_occ": [] },
+                    strategies: []
+                };
+                this.simulationLog = [];
+                
+                this.config = {
+                    strategy: "hold",
+                    adjustments: {
+                        increase: { percentage: parseFloat(config.increasePercentage) },
+                        decrease: { percentage: parseFloat(config.decreasePercentage) },
+                        hold: { oscillationPercentage: parseFloat(config.oscillationPercentage) }
+                    },
+                    occupancyWeights: {
+                        sevenDay: parseFloat(config.weights.sevenDay),
+                        thirtyDay: parseFloat(config.weights.thirtyDay),
+                        sixtyDay: parseFloat(config.weights.sixtyDay)
+                    },
+                    occupancyThresholds: {
+                        high: percentToDecimal(parseFloat(config.thresholds.high)),
+                        medium: percentToDecimal(parseFloat(config.thresholds.medium)),
+                        low: percentToDecimal(parseFloat(config.thresholds.low)),
+                        critical: percentToDecimal(parseFloat(config.thresholds.critical))
+                    }
+                };
+                
+                const propertyUrl = "simulated_property";
+                this.propertyStats.set(propertyUrl, {
+                    priceHistory: [],
+                    occupancyHistory: [],
+                    adjustmentHistory: []
+                });
+                
+                if (config.pastDays > 0) this.generateHistoricalData(propertyUrl, config);
+                
+                let currentBasePrice = config.initialBasePrice;
+                let currentMinPrice = config.initialMinPrice;
+                let currentOccupancy = {
+                    "7_day_occ": percentToDecimal(config.initialOccupancy["7_day_occ"]),
+                    "30_day_occ": percentToDecimal(config.initialOccupancy["30_day_occ"]),
+                    "60_day_occ": percentToDecimal(config.initialOccupancy["60_day_occ"])
+                };
+                
+                for (let day = 0; day < config.simulationDays; day++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() + day);
+                    const dateStr = date.toISOString().split('T')[0];
+                    
+                    this.simulationLog = [];
+                    const newBasePrice = this.calculateAdjustedPrice(propertyUrl, currentBasePrice, currentOccupancy, "base");
+                    const newMinPrice = this.calculateAdjustedPrice(propertyUrl, currentMinPrice, currentOccupancy, "min");
+                    const strategy = this.getPropertyStrategy(propertyUrl, currentOccupancy);
+                    
+                    const stats = this.propertyStats.get(propertyUrl);
+                    stats.priceHistory.push({
+                        date: date.toISOString(),
+                        basePrice: { before: currentBasePrice, after: newBasePrice },
+                        minPrice: { before: currentMinPrice, after: newMinPrice }
+                    });
+                    stats.occupancyHistory.push({
+                        date: date.toISOString(),
+                        "7_day_occ": currentOccupancy["7_day_occ"],
+                        "30_day_occ": currentOccupancy["30_day_occ"],
+                        "60_day_occ": currentOccupancy["60_day_occ"]
+                    });
+                    
+                    this.simulationResults.days.push(dateStr);
+                    this.simulationResults.prices.push({ base: newBasePrice, min: newMinPrice });
+                    this.simulationResults.occupancy["7_day_occ"].push(currentOccupancy["7_day_occ"]);
+                    this.simulationResults.occupancy["30_day_occ"].push(currentOccupancy["30_day_occ"]);
+                    this.simulationResults.occupancy["60_day_occ"].push(currentOccupancy["60_day_occ"]);
+                    this.simulationResults.strategies.push(strategy);
+                    
+                    currentOccupancy = this.simulateOccupancyResponse(newBasePrice, newMinPrice, currentOccupancy, strategy, day);
+                    currentBasePrice = newBasePrice;
+                    currentMinPrice = newMinPrice;
+                }
+                
+                return this.simulationResults;
+            }
+            
+            generateHistoricalData(propertyUrl, config) {
+                const stats = this.propertyStats.get(propertyUrl);
+                let currentBasePrice = config.initialBasePrice;
+                let currentMinPrice = config.initialMinPrice;
+                let currentOccupancy = {
+                    "7_day_occ": percentToDecimal(config.initialOccupancy["7_day_occ"]),
+                    "30_day_occ": percentToDecimal(config.initialOccupancy["30_day_occ"]),
+                    "60_day_occ": percentToDecimal(config.initialOccupancy["60_day_occ"])
+                };
+                
+                for (let day = -config.pastDays; day < 0; day++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() + day);
+                    
+                    const strategy = this.getPastStrategy(config.pastStrategy, day, config.pastDays);
+                    const newBasePrice = this.calculateAdjustedPrice(propertyUrl, currentBasePrice, currentOccupancy, "base");
+                    const newMinPrice = this.calculateAdjustedPrice(propertyUrl, currentMinPrice, currentOccupancy, "min");
+                    
+                    stats.priceHistory.push({
+                        date: date.toISOString(),
+                        basePrice: { before: currentBasePrice, after: newBasePrice },
+                        minPrice: { before: currentMinPrice, after: newMinPrice }
+                    });
+                    stats.occupancyHistory.push({
+                        date: date.toISOString(),
+                        "7_day_occ": currentOccupancy["7_day_occ"],
+                        "30_day_occ": currentOccupancy["30_day_occ"],
+                        "60_day_occ": currentOccupancy["60_day_occ"]
+                    });
+                    stats.adjustmentHistory.push({
+                        date: date.toISOString(),
+                        strategy: strategy,
+                        percentChange: (newBasePrice - currentBasePrice) / currentBasePrice * 100,
+                        priceType: "base",
+                        before: currentBasePrice,
+                        after: newBasePrice
+                    });
+                    
+                    currentOccupancy = this.simulateOccupancyResponse(newBasePrice, newMinPrice, currentOccupancy, strategy, day + config.pastDays);
+                    currentBasePrice = newBasePrice;
+                    currentMinPrice = newMinPrice;
+                }
+            }
+            
+            getPastStrategy(pattern, day, totalDays) {
+                switch (pattern) {
+                    case "increasing": return "increase";
+                    case "decreasing": return "decrease";
+                    case "mixed": return Math.random() > 0.5 ? "increase" : "decrease";
+                    case "fluctuating": return Math.sin(day / totalDays * Math.PI * 2) > 0 ? "increase" : "decrease";
+                    default: return "hold";
+                }
+            }
+        }
+
+        // UI Interaction Logic
+        let priceChart, strategyChart;
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelector(`[data-tab-content="${tab.dataset.tab}"]`).classList.add('active');
+            });
+        });
+
+        const presets = {
+            "high-occupancy": { "7_day_occ": 90, "30_day_occ": 85, "60_day_occ": 80 },
+            "low-occupancy": { "7_day_occ": 30, "30_day_occ": 35, "60_day_occ": 40 },
+            "fluctuating": { "7_day_occ": 60, "30_day_occ": 50, "60_day_occ": 55 },
+            "seasonal": { "7_day_occ": 75, "30_day_occ": 70, "60_day_occ": 65 },
+            "weekend-peaks": { "7_day_occ": 80, "30_day_occ": 60, "60_day_occ": 55 }
+        };
+
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const scenario = presets[btn.dataset.scenario];
+                document.getElementById('initial-7day-occ').value = scenario["7_day_occ"];
+                document.getElementById('initial-30day-occ').value = scenario["30_day_occ"];
+                document.getElementById('initial-60day-occ').value = scenario["60_day_occ"];
+            });
+        });
+
+        document.getElementById('run-simulation').addEventListener('click', () => {
+            const config = {
+                initialBasePrice: parseFloat(document.getElementById('initial-base-price').value),
+                initialMinPrice: parseFloat(document.getElementById('initial-min-price').value),
+                initialOccupancy: {
+                    "7_day_occ": parseFloat(document.getElementById('initial-7day-occ').value),
+                    "30_day_occ": parseFloat(document.getElementById('initial-30day-occ').value),
+                    "60_day_occ": parseFloat(document.getElementById('initial-60day-occ').value)
+                },
+                simulationDays: parseInt(document.getElementById('simulation-days').value),
+                weights: {
+                    sevenDay: document.getElementById('weight-7day').value,
+                    thirtyDay: document.getElementById('weight-30day').value,
+                    sixtyDay: document.getElementById('weight-60day').value
+                },
+                thresholds: {
+                    high: document.getElementById('threshold-high').value,
+                    medium: document.getElementById('threshold-medium').value,
+                    low: document.getElementById('threshold-low').value,
+                    critical: document.getElementById('threshold-critical').value
+                },
+                increasePercentage: document.getElementById('increase-percentage').value,
+                decreasePercentage: document.getElementById('decrease-percentage').value,
+                oscillationPercentage: document.getElementById('oscillation-percentage').value,
+                pastDays: parseInt(document.getElementById('past-days').value),
+                pastStrategy: document.getElementById('past-strategy').value,
+                consecutiveIncreases: parseInt(document.getElementById('consecutive-increases').value),
+                consecutiveDecreases: parseInt(document.getElementById('consecutive-decreases').value),
+                cumulativeIncrease: parseFloat(document.getElementById('cumulative-increase').value)
+            };
+
+            const strategy = new PricingStrategy(config);
+            const results = strategy.runSimulation(config);
+
+            const avgOccupancy = results.occupancy["7_day_occ"].reduce((a, b) => a + b, 0) / results.occupancy["7_day_occ"].length * 100;
+            const priceChange = ((results.prices[results.prices.length - 1].base - config.initialBasePrice) / config.initialBasePrice * 100).toFixed(1);
+            const increaseCount = results.strategies.filter(s => s === "increase").length;
+            const decreaseCount = results.strategies.filter(s => s === "decrease").length;
+            const holdCount = results.strategies.filter(s => s === "hold").length;
+
+            document.getElementById('avg-occupancy').textContent = `${avgOccupancy.toFixed(1)}%`;
+            document.getElementById('price-change').textContent = `${priceChange}%`;
+            document.getElementById('increase-count').textContent = increaseCount;
+            document.getElementById('decrease-count').textContent = decreaseCount;
+            document.getElementById('hold-count').textContent = holdCount;
+
+            const logDiv = document.getElementById('simulation-log');
+            logDiv.innerHTML = '';
+            strategy.simulationLog.forEach(entry => {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry strategy-${entry.type}`;
+                logEntry.textContent = entry.message;
+                logDiv.appendChild(logEntry);
+            });
+
+            if (priceChart) priceChart.destroy();
+            if (strategyChart) strategyChart.destroy();
+
+            priceChart = new Chart(document.getElementById('price-occupancy-chart'), {
+                type: 'line',
+                data: {
+                    labels: results.days,
+                    datasets: [
+                        { label: 'Base Price ($)', data: results.prices.map(p => p.base), borderColor: '#4CAF50', yAxisID: 'y' },
+                        { label: 'Min Price ($)', data: results.prices.map(p => p.min), borderColor: '#2196F3', yAxisID: 'y' },
+                        { label: '7-day Occupancy (%)', data: results.occupancy["7_day_occ"].map(o => o * 100), borderColor: '#FF9800', yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'Price ($)' } },
+                        y1: { type: 'linear', position: 'right', title: { display: true, text: 'Occupancy (%)' }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+
+            strategyChart = new Chart(document.getElementById('strategy-chart'), {
+                type: 'bar',
+                data: {
+                    labels: results.days,
+                    datasets: [{
+                        label: 'Strategy',
+                        data: results.strategies.map(s => ({ 'increase': 1, 'decrease': -1, 'hold': 0 }[s])),
+                        backgroundColor: results.strategies.map(s => ({ 'increase': 'rgba(76, 175, 80, 0.5)', 'decrease': 'rgba(244, 67, 54, 0.5)', 'hold': 'rgba(255, 193, 7, 0.5)' }[s]))
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: { callback: value => ({ 1: 'Increase', 0: 'Hold', '-1': 'Decrease' }[value]) },
+                            min: -1,
+                            max: 1,
+                            stepSize: 1
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "pricelabs-bot",
+  "version": "1.0.0",
+  "description": "A bot for automating PriceLabs updates",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "bun run index.js",
+    "lint": "bun run eslint .",
+    "lint:fix": "bun run eslint . --fix",
+    "lint:watch": "bun run chokidar '**/*.js' '!node_modules/**' -c 'bun run lint' --initial"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "puppeteer": "^19.7.0"
+  },
+  "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "eslint": "^8.36.0"
+  }
+}
